@@ -1,7 +1,7 @@
 extern crate alloc;
 
-use alloc::vec::Vec;
 use crate::hash::Algorithm;
+use alloc::vec::Vec;
 
 /// Merkle tree inclusion proof for data element, for which item = Leaf(Hash(Data Item)).
 ///
@@ -18,7 +18,7 @@ pub struct Proof<T: Eq + Clone + AsRef<[u8]>> {
     path: Vec<bool>,
 }
 
-impl<T: Eq + Clone + AsRef<[u8]>> Proof<T> {
+impl<T: Eq + Clone + AsRef<[u8]> + std::fmt::Debug> Proof<T> {
     /// Creates new MT inclusion proof
     pub fn new(hash: Vec<T>, path: Vec<bool>) -> Proof<T> {
         assert!(hash.len() > 2);
@@ -40,6 +40,7 @@ impl<T: Eq + Clone + AsRef<[u8]>> Proof<T> {
     pub fn validate<A: Algorithm<T>>(&self) -> bool {
         let size = self.lemma.len();
         if size < 2 {
+            assert!(false);
             return false;
         }
 
@@ -47,13 +48,55 @@ impl<T: Eq + Clone + AsRef<[u8]>> Proof<T> {
         let mut a = A::default();
 
         for i in 1..size - 1 {
+            #[cfg(not(target_os = "zkvm"))]
+            {
+                println!("Verify iteration {}: {:?}", i, h)
+            };
             a.reset();
             h = if self.path[i - 1] {
+                #[cfg(target_os = "zkvm")]
+                if i == 2 {
+                    assert_eq!(
+                        format!(
+                            "a.node(h: {:x?}, self.lemma[{}]: {:x?})",
+                            h, i, &self.lemma[i]
+                        ),
+                        ""
+                    );
+                }
+                #[cfg(not(target_os = "zkvm"))]
+                {
+                    println!(
+                        "a.node(h: {:x?}, self.lemma[{}]: {:x?})",
+                        h, i, &self.lemma[i]
+                    )
+                };
                 a.node(h, self.lemma[i].clone())
             } else {
+                #[cfg(target_os = "zkvm")]
+                if i == 2 {
+                    assert_eq!(
+                        format!(
+                            "a.node(self.lemma[{}]: {:x?}, h: {:x?})",
+                            i, &self.lemma[i], h
+                        ),
+                        ""
+                    );
+                }
+                #[cfg(not(target_os = "zkvm"))]
+                {
+                    println!(
+                        "a.node(self.lemma[{}]: {:x?}, h: {:x?})",
+                        i, &self.lemma[i], h
+                    )
+                };
                 a.node(self.lemma[i].clone(), h)
             };
         }
+        #[cfg(not(target_os = "zkvm"))]
+        {
+            println!("Verify root: {:?}", h)
+        };
 
         h == self.root()
     }

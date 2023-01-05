@@ -1,11 +1,11 @@
 extern crate alloc;
 
+use crate::hash::{Algorithm, Hashable};
+use crate::proof::Proof;
 use alloc::vec::Vec;
 use core::iter::FromIterator;
 use core::marker::PhantomData;
 use core::ops;
-use crate::hash::{Hashable, Algorithm};
-use crate::proof::Proof;
 
 /// Merkle Tree.
 ///
@@ -46,7 +46,7 @@ pub struct MerkleTree<T: Ord + Clone + AsRef<[u8]>, A: Algorithm<T>> {
     _a: PhantomData<A>,
 }
 
-impl<T: Ord + Clone + AsRef<[u8]>, A: Algorithm<T>> MerkleTree<T, A> {
+impl<T: Ord + Clone + AsRef<[u8]> + std::fmt::Debug, A: Algorithm<T>> MerkleTree<T, A> {
     /// Creates new merkle from a sequence of hashes.
     pub fn new<I: IntoIterator<Item = T>>(data: I) -> MerkleTree<T, A> {
         Self::from_iter(data)
@@ -164,7 +164,9 @@ impl<T: Ord + Clone + AsRef<[u8]>, A: Algorithm<T>> MerkleTree<T, A> {
     }
 }
 
-impl<T: Ord + Clone + AsRef<[u8]>, A: Algorithm<T>> FromIterator<T> for MerkleTree<T, A> {
+impl<T: Ord + Clone + AsRef<[u8]> + std::fmt::Debug, A: Algorithm<T>> FromIterator<T>
+    for MerkleTree<T, A>
+{
     /// Creates new merkle tree from an iterator over hashable objects.
     fn from_iter<I: IntoIterator<Item = T>>(into: I) -> Self {
         let iter = into.into_iter();
